@@ -20,5 +20,5 @@ services:
         value: "50"
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_SERVICE_KEY
+      - key: SUPABASE_SECRET_KEY
         sync: false
