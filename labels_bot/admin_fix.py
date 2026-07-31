@@ -46,7 +46,7 @@ def patched_admin_order_keyboard(order: dict) -> InlineKeyboardMarkup:
         ])
     elif status == "processing":
         rows.append([
-            InlineKeyboardButton("✅ Marcar completado", callback_data=f"set_status:{order_id}:completed")
+            InlineKeyboardButton("✅ Marcar procesado", callback_data=f"set_status:{order_id}:completed")
         ])
     elif status == "rejected":
         rows.append([
@@ -58,6 +58,29 @@ def patched_admin_order_keyboard(order: dict) -> InlineKeyboardMarkup:
 
     rows.append([InlineKeyboardButton("⬅️ Pedidos", callback_data="admin_orders")])
     return InlineKeyboardMarkup(rows)
+
+
+async def patched_notify_customer_status(context: ContextTypes.DEFAULT_TYPE, order: dict) -> None:
+    status = order.get("status")
+    label = core.STATUS_LABELS.get(status, status)
+    notice = core.STATUS_NOTICES.get(status, "El estado de tu pedido cambió.")
+    text = (
+        f"🏷 <b>Actualización del pedido {core.esc(order.get('id'))}</b>\n\n"
+        f"Estado: <b>{label}</b>\n{core.esc(notice)}"
+    )
+    if status == "completed":
+        text += "\n\nGracias. Tus etiquetas ya fueron procesadas."
+    try:
+        await context.bot.send_message(
+            order["telegram_user_id"],
+            text,
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("📍 Ver estado", callback_data=f"order:{order.get('id')}")
+            ]]),
+            parse_mode=ParseMode.HTML,
+        )
+    except TelegramError:
+        core.logger.exception("No se pudo notificar al cliente")
 
 
 async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -146,8 +169,12 @@ async def show_order_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 def build_application():
+    core.STATUS_LABELS["completed"] = "✅ Procesado"
+    core.STATUS_NOTICES["completed"] = "El procesamiento de tus etiquetas fue finalizado."
     core.is_admin = patched_is_admin
     core.admin_order_keyboard = patched_admin_order_keyboard
+    core.notify_customer_status = patched_notify_customer_status
+
     app = base.build_application()
     app.add_handler(CommandHandler("myid", my_id), group=-3)
     app.add_handler(
