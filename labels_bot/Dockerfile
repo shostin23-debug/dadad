@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 10000
-CMD ["python", "commands_app.py"]
+CMD ["python", "admin_fix.py"]
