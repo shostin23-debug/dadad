@@ -8,14 +8,10 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import CommandHandler, ContextTypes
 
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "Goldito1").lstrip("@").lower()
-
 
 def patched_is_admin(user) -> bool:
-    if not user:
-        return False
-    username = (user.username or "").lower()
-    return user.id == core.ADMIN_CHAT_ID or bool(ADMIN_USERNAME and username == ADMIN_USERNAME)
+    """Grant administrator access only to the configured numeric Telegram ID."""
+    return bool(user and user.id == core.ADMIN_CHAT_ID)
 
 
 async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
