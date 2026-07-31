@@ -4,35 +4,23 @@ import os
 import admin_fix as base
 import bot as core
 from telegram import Update
-from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 
 async def patched_clear_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Delete recent messages while preserving the currently pinned message."""
+    """Cancel the current flow and reopen the menu without deleting messages."""
     chat = update.effective_chat
     message = update.effective_message
-    if not chat or not message or chat.type != "private":
+    if not chat or not message:
         return
 
-    pinned_message_id = None
-    try:
-        full_chat = await context.bot.get_chat(chat.id)
-        pinned_message = getattr(full_chat, "pinned_message", None)
-        if pinned_message:
-            pinned_message_id = pinned_message.message_id
-    except TelegramError:
-        core.logger.exception("No se pudo consultar el mensaje fijado")
+    if chat.type != "private":
+        await message.reply_text("El comando /clear solamente funciona en el chat privado con el bot.")
+        return
 
-    newest = message.message_id
-    for message_id in range(newest, max(0, newest - 100), -1):
-        if message_id == pinned_message_id:
-            continue
-        try:
-            await context.bot.delete_message(chat.id, message_id)
-        except TelegramError:
-            continue
-
+    # Keep every Telegram message so the conversation remains in the user's
+    # pinned chat list. Only reset the bot's current temporary workflow.
+    context.user_data.clear()
     await core.start(update, context)
 
 
