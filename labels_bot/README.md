@@ -24,9 +24,11 @@ Bot de Telegram separado del bot de ilumistore.
 3. Ejecutar todo el archivo `schema.sql`.
 4. Guardar en Render como secretos:
    - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_KEY`
+   - `SUPABASE_SECRET_KEY`
 
-Nunca guardar la clave service role en GitHub ni enviarla por chat.
+El bot también acepta temporalmente `SUPABASE_SERVICE_KEY` para proyectos antiguos, pero se recomienda la clave moderna `sb_secret_...`.
+
+Nunca guardar una clave secreta de Supabase en GitHub ni enviarla por chat.
 
 ## Variables de Render
 
@@ -36,6 +38,6 @@ Nunca guardar la clave service role en GitHub ni enviarla por chat.
 - `LABEL_PRICE`: precio por etiqueta; actualmente 25.
 - `MAX_LABELS`: máximo permitido por pedido; actualmente 50.
 - `SUPABASE_URL`: URL del proyecto de Supabase.
-- `SUPABASE_SERVICE_KEY`: clave service role de Supabase.
+- `SUPABASE_SECRET_KEY`: clave secreta del servidor de Supabase.
 
 Para crear un segundo servicio en Render usando este mismo repositorio, establece **Root Directory** en `labels_bot`.
