@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: labels-telegram-bot
+    name: ilumidevolutions-bot
     runtime: docker
     rootDir: labels_bot
     plan: free
@@ -9,9 +9,9 @@ services:
       - key: BOT_TOKEN
         sync: false
       - key: ADMIN_CHAT_ID
-        value: "7530261961"
+        value: "7354729657"
       - key: STORE_NAME
-        value: Procesador de Etiquetas
+        value: ilumidevolutions
       - key: BINANCE_PAY_ID
         value: "796271520"
       - key: LABEL_PRICE
