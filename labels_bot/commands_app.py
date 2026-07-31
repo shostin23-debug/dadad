@@ -1,6 +1,7 @@
 import hashlib
 import os
 
+import app as fixed_app
 import bot as base
 from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
@@ -74,13 +75,13 @@ async def configure_commands(application) -> None:
 
 def build_application():
     base.main_menu = patched_main_menu
-    app = base.build_application()
-    app.add_handler(CommandHandler("comandos", commands_help), group=-1)
-    app.add_handler(CommandHandler("ayuda", commands_help), group=-1)
-    app.add_handler(CommandHandler("help", commands_help), group=-1)
+    app = fixed_app.build_application()
+    app.add_handler(CommandHandler("comandos", commands_help), group=-2)
+    app.add_handler(CommandHandler("ayuda", commands_help), group=-2)
+    app.add_handler(CommandHandler("help", commands_help), group=-2)
     app.add_handler(
         CallbackQueryHandler(commands_help, pattern=r"^commands_help$"),
-        group=-1,
+        group=-2,
     )
     app.post_init = configure_commands
     return app
