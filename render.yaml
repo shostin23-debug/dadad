@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ilumistore-bot
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_CHAT_ID
+        value: "7530261961"
+      - key: STORE_NAME
+        value: ilumistore
+      - key: PAYPAL_ADDRESS
+        value: shostin23@gmail.com
+      - key: ZELLE_RECIPIENT
+        value: Pshahaha63@gmail.com
+      - key: BINANCE_PAY_ID
+        value: "796271520"
