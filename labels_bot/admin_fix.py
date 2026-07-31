@@ -1,6 +1,7 @@
 import hashlib
 import html
 import os
+import re
 
 import bot as core
 import commands_app as base
@@ -9,10 +10,70 @@ from telegram.constants import ParseMode
 from telegram.error import TelegramError
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
+ORIGINAL_BEGIN_LABEL_UPLOAD = core.begin_label_upload
+ORIGINAL_TEXT_HANDLER = core.text_handler
+
 
 def patched_is_admin(user) -> bool:
     """Grant administrator access only to the configured numeric Telegram ID."""
     return bool(user and user.id == core.ADMIN_CHAT_ID)
+
+
+async def patched_begin_label_upload(message, context: ContextTypes.DEFAULT_TYPE, quantity: int) -> None:
+    """Require the customer to confirm their real Telegram username first."""
+    if quantity < 1 or quantity > core.MAX_LABELS:
+        await message.reply_text(f"La cantidad debe estar entre 1 y {core.MAX_LABELS}.")
+        return
+
+    context.user_data.clear()
+    context.user_data.update({
+        "mode": "awaiting_order_username",
+        "quantity": quantity,
+    })
+    await message.reply_text(
+        "Antes de enviar tus etiquetas, escribe tu usuario de Telegram incluyendo la @.\n\n"
+        "Ejemplo: <code>@tuusuario</code>\n\n"
+        "El usuario debe coincidir con la cuenta desde la que estás haciendo el pedido.",
+        parse_mode=ParseMode.HTML,
+    )
+
+
+async def patched_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Validate the typed username, then continue with the normal upload flow."""
+    if context.user_data.get("mode") != "awaiting_order_username":
+        await ORIGINAL_TEXT_HANDLER(update, context)
+        return
+
+    typed_username = (update.message.text or "").strip()
+    if not re.fullmatch(r"@[A-Za-z0-9_]{5,32}", typed_username):
+        await update.message.reply_text(
+            "Escribe un usuario válido incluyendo la @.\nEjemplo: <code>@tuusuario</code>",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+
+    account_username = update.effective_user.username
+    if not account_username:
+        await update.message.reply_text(
+            "Tu cuenta de Telegram todavía no tiene un nombre de usuario.\n\n"
+            "Créalo en Ajustes de Telegram y luego vuelve a iniciar el pedido con /start."
+        )
+        return
+
+    if typed_username[1:].lower() != account_username.lower():
+        await update.message.reply_text(
+            f"Ese usuario no coincide con esta cuenta. Escribe exactamente: "
+            f"<code>@{html.escape(account_username)}</code>",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+
+    quantity = int(context.user_data.get("quantity", 0))
+    await update.message.reply_text(
+        f"✅ Usuario confirmado: <b>@{html.escape(account_username)}</b>",
+        parse_mode=ParseMode.HTML,
+    )
+    await ORIGINAL_BEGIN_LABEL_UPLOAD(update.message, context, quantity)
 
 
 def patched_admin_order_keyboard(order: dict) -> InlineKeyboardMarkup:
@@ -172,6 +233,8 @@ def build_application():
     core.STATUS_LABELS["completed"] = "✅ Procesado"
     core.STATUS_NOTICES["completed"] = "El procesamiento de tus etiquetas fue finalizado."
     core.is_admin = patched_is_admin
+    core.begin_label_upload = patched_begin_label_upload
+    core.text_handler = patched_text_handler
     core.admin_order_keyboard = patched_admin_order_keyboard
     core.notify_customer_status = patched_notify_customer_status
 
