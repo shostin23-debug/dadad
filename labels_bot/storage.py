@@ -12,12 +12,24 @@ def now_iso() -> str:
 class SupabaseStorage:
     def __init__(self) -> None:
         self.base_url = os.environ["SUPABASE_URL"].rstrip("/") + "/rest/v1"
-        self.key = os.environ["SUPABASE_SERVICE_KEY"]
+        self.key = (
+            os.getenv("SUPABASE_SECRET_KEY")
+            or os.getenv("SUPABASE_SERVICE_KEY")
+            or ""
+        )
+        if not self.key:
+            raise RuntimeError(
+                "Falta SUPABASE_SECRET_KEY (o SUPABASE_SERVICE_KEY para proyectos antiguos)."
+            )
+
         self.headers = {
             "apikey": self.key,
-            "Authorization": f"Bearer {self.key}",
             "Content-Type": "application/json",
         }
+        # Las claves legacy service_role son JWT y sí pueden enviarse como Bearer.
+        # Las claves modernas sb_secret_ deben enviarse solamente como apikey.
+        if not self.key.startswith("sb_secret_"):
+            self.headers["Authorization"] = f"Bearer {self.key}"
 
     def _request(
         self,
